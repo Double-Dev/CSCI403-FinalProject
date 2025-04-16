@@ -1,23 +1,16 @@
-import pg8000
-from getpass import getpass
+import dearpygui.dearpygui as dpg
 
-print("Welcome to Toronto Crime Statistics")
-username = input("Please enter username: ")
-# Connect to DB
-connection = pg8000.connect(
-    user=username,
-    password=getpass(),
-    host="ada.mines.edu",
-    port=5432,
-    database="csci403"
-)
+dpg.create_context()
+dpg.create_viewport(title="Toronto Crime Statistics", width=800, height=400)
+dpg.setup_dearpygui()
 
-cursor = connection.cursor()
+with dpg.window(label="Example Window"):
+    dpg.add_text("Hello, Dear PyGui")
 
-table = input("Select a table to query: ")
-cursor.execute("SELECT * FROM %s;", table)
+dpg.show_viewport()
 
-# Commit changes to DB
-connection.commit()
-cursor.close()
-connection.close()
+while dpg.is_dearpygui_running():
+    dpg.render_dearpygui_frame()
+
+dpg.destroy_context()
+
