@@ -23,3 +23,29 @@ WITH crime_location AS (
 FROM rankings;
 
 
+SELECT occurance_date.OCC_MONTH, 
+    CASE 
+        WHEN EXTRACT(MONTH FROM occurance_date.OCCURANCE_FULL_DATE) IN (12, 1, 2) THEN 'Winter'
+        WHEN EXTRACT(MONTH FROM occurance_date.OCCURANCE_FULL_DATE) IN (3, 4, 5) THEN 'Spring'
+        WHEN EXTRACT(MONTH FROM occurance_date.OCCURANCE_FULL_DATE) IN (6, 7, 8) THEN 'Summer'
+        WHEN EXTRACT(MONTH FROM occurance_date.OCCURANCE_FULL_DATE) IN (9, 10, 11) THEN 'Fall'
+    END AS season,
+    COUNT(*) AS count
+FROM toronto_crimes
+JOIN occurance_date ON toronto_crimes.OCC_DATE = occurance_date.OCCURANCE_FULL_DATE
+GROUP BY occurance_date.OCC_MONTH, season
+ORDER BY 
+  CASE occurance_date.OCC_MONTH
+    WHEN 'January' THEN 1
+    WHEN 'February' THEN 2
+    WHEN 'March' THEN 3
+    WHEN 'April' THEN 4
+    WHEN 'May' THEN 5
+    WHEN 'June' THEN 6
+    WHEN 'July' THEN 7
+    WHEN 'August' THEN 8
+    WHEN 'September' THEN 9
+    WHEN 'October' THEN 10
+    WHEN 'November' THEN 11
+    WHEN 'December' THEN 12
+  END, count DESC;
