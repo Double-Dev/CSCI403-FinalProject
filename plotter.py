@@ -4,7 +4,7 @@ import pandas as pd
 
 def make_map(lat, long, lats, longs, crimes):
     crime_types = ['Assault','Auto Theft','Break and Enter','Robbery','Theft Over']
-    crime_colors = [(186/255, 129/255, 30/255),(58/255, 126/255, 166/255),'Yellow',(127/255,240/255,70/255),(159/255, 123/255, 176/255)]
+    crime_colors = [(237/255, 5/255, 195/255),(45/255, 119/255, 230/255),'Yellow',(127/255,240/255,70/255),(159/255, 123/255, 176/255)]
     figure, ax = plt.subplots()
 
     dff = pd.DataFrame({'Longs':longs,'Lats':lats,'Crimes':crimes})
