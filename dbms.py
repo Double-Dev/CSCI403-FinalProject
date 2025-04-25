@@ -11,15 +11,19 @@ def create(username: str, password: str):
     global connection
     global cursor
     # Connect to DB
-    connection = pg8000.connect(
-        user=username,
-        password=password,
-        host="ada.mines.edu",
-        port=5432,
-        database="csci403"
-    )
-    cursor = connection.cursor()
-    cursor.execute("SET search_path TO group8;")
+    try:
+        connection = pg8000.connect(
+            user=username,
+            password=password,
+            host="ada.mines.edu",
+            port=5432,
+            database="csci403"
+        )
+        cursor = connection.cursor()
+        cursor.execute("SET search_path TO group8;")
+        return 0
+    except Exception as e:
+        return 1
 
 def select(table):
     global cursor
@@ -30,25 +34,31 @@ def select(table):
     results = cursor.fetchall()
     return 0, results
 
-def crimesInArea(address, horiKm, vertKm):
+def addessToLatLong(address):
     key = '&api_key=68001ed089ffb524504774xwb615f13'
     url = 'https://geocode.maps.co/search?q='
     query = url+address+key
     res = rq.get(query)
     if (res.status_code == 401) or len(res.json()) < 1:
-        return 1, {}
+        return None, None
     lat = float(res.json()[0]['lat'])
     long = float(res.json()[0]['lon'])
+    return lat, long
+
+def crimesInArea(lat, long, horiKm, vertKm):
     latDist = horiKm / 110.574
+    longDist = vertKm/(111.32*math.cos(lat-latDist))
     cursor.execute("""
-        SELECT lat_wgs84, long_wgs84 FROM toronto_crimes WHERE 
-            (lat_wgs84 >= %s AND lat_wgs84 <= %s) AND
+        SELECT lat_wgs84, long_wgs84, offense FROM toronto_crimes
+            JOIN crime_info ON toronto_crimes.ucr = crime_info.ucr
+            WHERE (lat_wgs84 >= %s AND lat_wgs84 <= %s) AND
             (long_wgs84 >= %s AND long_wgs84 <= %s);
-        """, (lat-latDist, lat+latDist, long-vertKm/(111.32*math.cos(lat-latDist)), long+vertKm/(111.32*math.cos(lat+latDist))))
+        """, (lat-latDist, lat+latDist, long-longDist, long+longDist))
     return 0, cursor.fetchall()
 
-def insert(ucr, offense, mciCategory, occuranceDate, occuranceHour, address, hoodCode, hoodName, premiseType, locationType):
+def insert(ucr, offense, mciCategory, occuranceDate, occuranceHour, address, hoodCode, hoodName, premiseType, locationType, division):
     global cursor
+    # try:
     # Checking if occurance date is in DB and adding it if it's not:
     # cursor.execute("SELECT * FROM occurance_date WHERE report_full_date = %s;", (occuranceDate))
     # if cursor.fetchall().count() == 0:
@@ -77,15 +87,8 @@ def insert(ucr, offense, mciCategory, occuranceDate, occuranceHour, address, hoo
             (premiseType, locationType))
     
     # Checking if location is in DB and adding it if it's not:
-    key = '&api_key=68001ed089ffb524504774xwb615f13'
-    url = 'https://geocode.maps.co/search?q='
-    query = url+address+key
-    res = rq.get(query)
-    if (res.status_code == 401) or len(res.json()) < 1:
-        return 1, {}
-    lat = float(res.json()[0]['lat'])
-    long = float(res.json()[0]['lon'])
-    cursor.execute("INSERT INTO report_date VALUES (%s, %s, %s, %s, %s) ON CONFLICT (long_wgs84, lat_wgs84) DO NOTHING;",
+    lat, long = addessToLatLong(address)
+    cursor.execute("INSERT INTO location VALUES (%s, %s, %s, %s, %s) ON CONFLICT (long_wgs84, lat_wgs84) DO NOTHING;",
         (long, lat, premiseType, hoodCode, hoodName))
 
     # Checking if crime_info is in DB and adding it if it's not:
@@ -94,7 +97,12 @@ def insert(ucr, offense, mciCategory, occuranceDate, occuranceHour, address, hoo
     
     # Inserting crime into main crime table:
     cursor.execute("INSERT INTO toronto_crimes VALUES (%s, %s, %s, %s, %s, NULL, %s, %s);",
-        (ucr, reportDate, occuranceDate, long, lat, datetime.now().hour, occuranceHour))
+        ("Testing", reportDate, occuranceDate, datetime.now().hour, occuranceHour, division, ucr, long, lat))
+    
+    return 0
+    # except Exception as e:
+    #     print(e)
+    #     return 1
 
 
 def destroy():
