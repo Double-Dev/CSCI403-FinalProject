@@ -49,7 +49,7 @@ def crimesInArea(lat, long, horiKm, vertKm):
     latDist = horiKm / 110.574
     longDist = vertKm/(111.32*math.cos(lat-latDist))
     cursor.execute("""
-        SELECT lat_wgs84, long_wgs84, offense FROM toronto_crimes
+        SELECT lat_wgs84, long_wgs84, mci_category FROM toronto_crimes
             JOIN crime_info ON toronto_crimes.ucr = crime_info.ucr
             WHERE (lat_wgs84 >= %s AND lat_wgs84 <= %s) AND
             (long_wgs84 >= %s AND long_wgs84 <= %s);

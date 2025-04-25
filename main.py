@@ -33,7 +33,7 @@ def areaSearchCallback():
             dpg.add_text("Wasn't able to complete query.")
 
 def insertCallback():
-    lat, long = dbms.addessToLatLong(dpg.get_value("address_insert_value"))
+    lat, long = dbms.addessToLatLong(dpg.get_value("address_insert_value")+", Toronto")
     if lat == None or long == None:
         with dpg.window(label="Error", width=300, height=50, no_resize=True):
             dpg.add_text("Please enter a valid address.")
