@@ -24,12 +24,13 @@ while True:
         res = rq.get(query)
 
     distance = input("Show crimes within how many miles? (Suggested 3): ")
+    crimes =input("")
+    
 
     lat = float(res.json()[0]['lat'])
     long = float(res.json()[0]['lon'])
 
     dff = df[((lat-lat_buff<df['LAT_WGS84']) & (lat+lat_buff>df['LAT_WGS84'])) & ((long-long_buff<df['LONG_WGS84']) & (long+long_buff>df['LONG_WGS84']))]
-    dff.shape
 
     colors, unique = pd.factorize(dff['MCI_CATEGORY'])
     figure, ax = plt.subplots()
