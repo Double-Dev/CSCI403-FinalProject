@@ -34,7 +34,7 @@ def select(table):
     results = cursor.fetchall()
     return 0, results
 
-def addessToLatLong(address):
+def addressToLatLong(address):
     key = '&api_key=68001ed089ffb524504774xwb615f13'
     url = 'https://geocode.maps.co/search?q='
     query = url+address+key
@@ -58,51 +58,67 @@ def crimesInArea(lat, long, horiKm, vertKm):
 
 def insert(ucr, offense, mciCategory, occuranceDate, occuranceHour, address, hoodCode, hoodName, premiseType, locationType, division):
     global cursor
-    # try:
-    # Checking if occurance date is in DB and adding it if it's not:
-    # cursor.execute("SELECT * FROM occurance_date WHERE report_full_date = %s;", (occuranceDate))
-    # if cursor.fetchall().count() == 0:
-    cursor.execute("INSERT INTO occurance_date VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (occurance_full_date) DO NOTHING;;",
-                    (occuranceDate,
-                    occuranceDate.year,
-                    occuranceDate.month,
-                    occuranceDate.day,
-                    occuranceDate.timetuple().tm_yday,
-                    occuranceDate.weekday()))
-    
-    # Checking if report date is in DB and adding it if it's not:
-    reportDate = date.today()
-    # cursor.execute("SELECT * FROM occurance_date WHERE report_full_date = %s;", (reportDate))
-    # if cursor.fetchall().count() == 0:
-    cursor.execute("INSERT INTO report_date VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (report_full_date) DO NOTHING;",
-            (reportDate,
-            reportDate.year,
-            reportDate.month,
-            reportDate.day,
-            reportDate.timetuple().tm_yday,
-            reportDate.weekday()))
-    
-    # Checking if location type is in DB and adding it if it's not:
-    cursor.execute("INSERT INTO location_type VALUES (%s, %s) ON CONFLICT (premis_type) DO NOTHING;",
-            (premiseType, locationType))
-    
-    # Checking if location is in DB and adding it if it's not:
-    lat, long = addessToLatLong(address)
-    cursor.execute("INSERT INTO location VALUES (%s, %s, %s, %s, %s) ON CONFLICT (long_wgs84, lat_wgs84) DO NOTHING;",
-        (long, lat, premiseType, hoodCode, hoodName))
+    try:
+        # Checking if occurance date is in DB and adding it if it's not:
+        # cursor.execute("SELECT * FROM occurance_date WHERE report_full_date = %s;", (occuranceDate))
+        # if cursor.fetchall().count() == 0:
+        cursor.execute("""
+                    INSERT INTO occurance_date (occurance_full_date, occ_year, occ_month, occ_day, occ_doy, occ_dow)
+                    VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (occurance_full_date) DO NOTHING;
+                    """,
+                        (occuranceDate,
+                        occuranceDate.year,
+                        occuranceDate.month,
+                        occuranceDate.day,
+                        occuranceDate.timetuple().tm_yday,
+                        occuranceDate.weekday()))
+        
+        # Checking if report date is in DB and adding it if it's not:
+        reportDate = date.today()
+        # cursor.execute("SELECT * FROM occurance_date WHERE report_full_date = %s;", (reportDate))
+        # if cursor.fetchall().count() == 0:
+        cursor.execute("""
+                    INSERT INTO report_date (report_full_date, report_year, report_month, report_day, report_doy, report_dow)
+                    VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (report_full_date) DO NOTHING;
+                    """,
+                (reportDate,
+                reportDate.year,
+                reportDate.month,
+                reportDate.day,
+                reportDate.timetuple().tm_yday,
+                reportDate.weekday()))
+        
+        # Checking if location type is in DB and adding it if it's not:
+        cursor.execute("INSERT INTO location_type (premis_type, location_type) VALUES (%s, %s) ON CONFLICT (premis_type) DO NOTHING;",
+                (premiseType, locationType))
+        
+        # Checking if location is in DB and adding it if it's not:
+        lat, long = addressToLatLong(address)
+        cursor.execute("""
+                    INSERT INTO location (long_wgs84, lat_wgs84, premis_type, hood_158, neighborhood_158)
+                    VALUES (%s, %s, %s, %s, %s) ON CONFLICT (long_wgs84, lat_wgs84) DO NOTHING;
+                    """,
+            (long, lat, premiseType, hoodCode, hoodName))
 
-    # Checking if crime_info is in DB and adding it if it's not:
-    cursor.execute("INSERT INTO crime_info VALUES (%s, %s, %s) ON CONFLICT (ucr) DO NOTHING;",
-        (ucr, offense, mciCategory))
-    
-    # Inserting crime into main crime table:
-    cursor.execute("INSERT INTO toronto_crimes VALUES (%s, %s, %s, %s, %s, NULL, %s, %s);",
-        ("Testing", reportDate, occuranceDate, datetime.now().hour, occuranceHour, division, ucr, long, lat))
-    
-    return 0
-    # except Exception as e:
-    #     print(e)
-    #     return 1
+        # Checking if crime_info is in DB and adding it if it's not:
+        cursor.execute("""
+                    INSERT INTO crime_info (ucr, offense, mci_category)
+                    VALUES (%s, %s, %s) ON CONFLICT (ucr) DO NOTHING;
+                    """,
+            (ucr, offense, mciCategory))
+        
+        # Inserting crime into main crime table:
+        cursor.execute(
+            """
+            INSERT INTO toronto_crimes
+            (event_unique_id, report_date, occ_date, report_hour, occ_hour, division, ucr, long_wgs84, lat_wgs84)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """,
+            ("Testing", reportDate, occuranceDate, datetime.now().hour, occuranceHour, division, ucr, long, lat))
+        
+        return 0
+    except Exception as e:
+        return 1
 
 
 def destroy():

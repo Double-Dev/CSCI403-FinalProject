@@ -8,7 +8,7 @@ dpg.create_viewport(title="Toronto Crime Statistics", width=800, height=400)
 dpg.setup_dearpygui()
 
 def areaSearchCallback():
-    lat, long = dbms.addessToLatLong(dpg.get_value("address_query_value"))
+    lat, long = dbms.addressToLatLong(dpg.get_value("address_query_value"))
     if lat == None or long == None:
         with dpg.window(label="Error", width=300, height=50, no_resize=True):
             dpg.add_text("Please enter a valid address.")
@@ -24,9 +24,14 @@ def areaSearchCallback():
             crimes.append(row[2])
         plotter.make_map(lat, long, lats, longs, crimes)
         width, height, channels, data = dpg.load_image("output_map.jpg")
+        try:
+            dpg.delete_item("output_map")
+            dpg.delete_item("query_output")
+        except:
+            pass
         with dpg.texture_registry():
             dpg.add_static_texture(width=width, height=height, default_value=data, tag="output_map")
-        with dpg.window(label="Crimes in Area", width=width, height=height):
+        with dpg.window(tag="query_output", label="Crimes in Area", width=width, height=height):
             dpg.add_image("output_map")
     else:
         with dpg.window(label="Error", width=300, height=50, no_resize=True):
