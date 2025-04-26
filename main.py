@@ -38,16 +38,16 @@ def areaSearchCallback():
             dpg.add_text("Wasn't able to complete query.")
 
 def insertCallback():
-    lat, long = dbms.addessToLatLong(dpg.get_value("address_insert_value"))
+    lat, long = dbms.addressToLatLong(dpg.get_value("address_insert_value"))
     if lat == None or long == None:
         with dpg.window(label="Error", width=300, height=50, no_resize=True):
             dpg.add_text("Please enter a valid address.")
         return
-    
     occurDate = dpg.get_value("date_value")
+    print(occurDate)
     status = dbms.insert(
         dpg.get_value("ucr_value"), dpg.get_value("offense_value"),
-        dpg.get_value("mci_category_value"), date(occurDate['year'], occurDate['month'], occurDate['month_day']),
+        dpg.get_value("mci_category_value"), date(occurDate['year']+1900, occurDate['month']+1, occurDate['month_day']),
         dpg.get_value("hour_value"), dpg.get_value("address_insert_value"),
         dpg.get_value("hoodcode_value"), dpg.get_value("hood_value"),
         dpg.get_value("premise_value"), dpg.get_value("location_value"),
@@ -59,6 +59,31 @@ def insertCallback():
     else:
         with dpg.window(label="Error", width=300, height=50, no_resize=True):
             dpg.add_text("Wasn't able to complete query.")
+
+def deleteSearchCallback():
+    dateVal = dpg.get_value("delete_date_value")
+    status, result = dbms.searchForDelete(date(dateVal['year']+1900, dateVal['month']+1, dateVal['month_day']))
+    if status == 0:
+        with dpg.window(tag="confirm_delete", label="Confirm Delete", width=400, height=50, no_resize=True):
+            dpg.add_text("You're attempting to delete {0} crime reports.".format(result[0][0]))
+            dpg.add_text("Are you sure you want to do this?")
+            with dpg.group(horizontal=True):
+                dpg.add_button(label="Yes", callback=deleteCallback)
+                dpg.add_button(label="No", callback=deleteCancelCallback)
+    else:
+        with dpg.window(label="Error", width=300, height=50, no_resize=True):
+            dpg.add_text("Wasn't able to complete query.")
+
+def deleteCallback():
+    dateVal = dpg.get_value("delete_date_value")
+    status = dbms.delete(date(dateVal['year']+1900, dateVal['month']+1, dateVal['month_day']))
+    if status != 0:
+        with dpg.window(label="Error", width=300, height=50, no_resize=True):
+            dpg.add_text("Deletion failed.")
+    dpg.delete_item("confirm_delete")
+
+def deleteCancelCallback():
+    dpg.delete_item("confirm_delete")
 
 def login():
     if dbms.create(dpg.get_value("user_value"), dpg.get_value("pass_value")) != 0:
@@ -87,7 +112,7 @@ def login():
                     dpg.add_text("MCI Category:")
                     dpg.add_input_text(tag="mci_category_value")
                 with dpg.group(horizontal=True):
-                    dpg.add_text("Date & Time:")
+                    dpg.add_text("Date & Hour:")
                     dpg.add_date_picker(tag="date_value")
                     dpg.add_input_int(tag="hour_value", min_value=0, max_value=23)
                 with dpg.group(horizontal=True):
@@ -109,10 +134,15 @@ def login():
                     dpg.add_text("Division:")
                     dpg.add_input_text(tag="division_value")
                 dpg.add_button(label="Insert", callback=insertCallback)
+            with dpg.tab(label="Delete"):
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Date:")
+                    dpg.add_date_picker(tag="delete_date_value")
+                dpg.add_button(label="Delete", callback=deleteSearchCallback)
     dpg.set_primary_window("MainWindow", True)
-    dpg.delete_item("LoginWindow")
+    dpg.delete_item("login_window")
 
-with dpg.window(tag="LoginWindow"):
+with dpg.window(tag="login_window"):
     dpg.add_text("Please Login:")
     with dpg.group(horizontal=True):
         dpg.add_text("Username:")
@@ -121,7 +151,7 @@ with dpg.window(tag="LoginWindow"):
         dpg.add_text("Password:")
         dpg.add_input_text(tag="pass_value", password=True)
     dpg.add_button(label="Connect", callback=login)
-dpg.set_primary_window("LoginWindow", True)
+dpg.set_primary_window("login_window", True)
 
 dpg.show_viewport()
 while dpg.is_dearpygui_running():

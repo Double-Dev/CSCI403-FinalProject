@@ -46,15 +46,18 @@ def addressToLatLong(address):
     return lat, long
 
 def crimesInArea(lat, long, horiKm, vertKm):
-    latDist = horiKm / 110.574
-    longDist = vertKm/(111.32*math.cos(lat-latDist))
-    cursor.execute("""
-        SELECT lat_wgs84, long_wgs84, offense FROM toronto_crimes
-            JOIN crime_info ON toronto_crimes.ucr = crime_info.ucr
-            WHERE (lat_wgs84 >= %s AND lat_wgs84 <= %s) AND
-            (long_wgs84 >= %s AND long_wgs84 <= %s);
-        """, (lat-latDist, lat+latDist, long-longDist, long+longDist))
-    return 0, cursor.fetchall()
+    try:
+        latDist = horiKm / 110.574
+        longDist = vertKm/(111.32*math.cos(lat-latDist))
+        cursor.execute("""
+            SELECT lat_wgs84, long_wgs84, offense FROM toronto_crimes
+                JOIN crime_info ON toronto_crimes.ucr = crime_info.ucr
+                WHERE (lat_wgs84 >= %s AND lat_wgs84 <= %s) AND
+                (long_wgs84 >= %s AND long_wgs84 <= %s);
+            """, (lat-latDist, lat+latDist, long-longDist, long+longDist))
+        return 0, cursor.fetchall()
+    except:
+        return 1, {}
 
 def insert(ucr, offense, mciCategory, occuranceDate, occuranceHour, address, hoodCode, hoodName, premiseType, locationType, division):
     global cursor
@@ -120,6 +123,23 @@ def insert(ucr, offense, mciCategory, occuranceDate, occuranceHour, address, hoo
     except Exception as e:
         return 1
 
+def searchForDelete(dateVal):
+    try:
+        cursor.execute("""
+        SELECT COUNT(*) FROM toronto_crimes WHERE occ_date BETWEEN %s AND %s;
+        """, (dateVal, dateVal))
+        return 0, cursor.fetchall()
+    except:
+        return 1, {}
+
+def delete(dateVal):
+    try:
+        cursor.execute("""
+        DELETE FROM toronto_crimes WHERE occ_date BETWEEN %s AND %s;
+        """, (dateVal, dateVal))
+        return 0
+    except:
+        return 1
 
 def destroy():
     global connection
