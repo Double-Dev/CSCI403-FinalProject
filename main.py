@@ -77,7 +77,10 @@ def deleteSearchCallback():
 def deleteCallback():
     dateVal = dpg.get_value("delete_date_value")
     status = dbms.delete(date(dateVal['year']+1900, dateVal['month']+1, dateVal['month_day']))
-    if status != 0:
+    if status == 0:
+        with dpg.window(label="Success", width=300, height=50, no_resize=True):
+            dpg.add_text("Items successfully removed from DB.")
+    else:
         with dpg.window(label="Error", width=300, height=50, no_resize=True):
             dpg.add_text("Deletion failed.")
     dpg.delete_item("confirm_delete")
