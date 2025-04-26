@@ -24,7 +24,6 @@ while True:
         res = rq.get(query)
 
     distance = input("Show crimes within how many miles? (Suggested 3): ")
-    crimes =input("")
     
 
     lat = float(res.json()[0]['lat'])
