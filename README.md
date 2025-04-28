@@ -14,6 +14,6 @@ python software/main.py
 ## Attribution for Dataset:
 - We are thankful to Mohammad Nazarudin Badi for uploading the dataset on Kaggle. Link: "https://www.kaggle.com/datasets/mohammadbadi/crimes-in-toronto/data".
 
-- This dataset is made available under the Open Government Licence – Ontario.
+- This dataset is made available under the Open Government License – Ontario.
 
 - Additionally, credit is due to the Toronto Police Service for compiling and providing access to this data.
