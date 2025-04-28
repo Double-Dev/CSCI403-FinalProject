@@ -2,12 +2,20 @@ import dearpygui.dearpygui as dpg
 import dbms
 import plotter
 from datetime import date
+import time
 
+# Tells image display logic in areaSearchCallback to wait for mathplotlib in plotter
+# to finish constructing its plot. 
+wait = False
+
+# Initializing the GUI library & creating a window.
 dpg.create_context()
 dpg.create_viewport(title="Toronto Crime Statistics", width=800, height=400)
 dpg.setup_dearpygui()
 
+# Callback for the 'Get' button in the query tab.
 def areaSearchCallback():
+    global wait
     lat, long = dbms.addressToLatLong(dpg.get_value("address_query_value"))
     if lat == None or long == None:
         with dpg.window(label="Error", width=300, height=50, no_resize=True):
@@ -23,6 +31,9 @@ def areaSearchCallback():
             longs.append(row[1])
             crimes.append(row[2])
         plotter.make_map(lat, long, lats, longs, crimes)
+        wait = True
+        while wait:
+            time.sleep(0.1)
         width, height, channels, data = dpg.load_image("output_map.jpg")
         try:
             dpg.delete_item("output_map")
@@ -37,6 +48,7 @@ def areaSearchCallback():
         with dpg.window(label="Error", width=300, height=50, no_resize=True):
             dpg.add_text("Wasn't able to complete query.")
 
+# Callback for the 'Insert' button in the Insert tab.
 def insertCallback():
     lat, long = dbms.addressToLatLong(dpg.get_value("address_insert_value")+", Toronto")
     if lat == None or long == None:
@@ -60,6 +72,7 @@ def insertCallback():
         with dpg.window(label="Error", width=300, height=50, no_resize=True):
             dpg.add_text("Wasn't able to complete query.")
 
+# Callback for the 'Delete' button in the Delete tab.
 def deleteSearchCallback():
     dateVal = dpg.get_value("delete_date_value")
     status, result = dbms.searchForDelete(date(dateVal['year']+1900, dateVal['month']+1, dateVal['month_day']))
@@ -74,6 +87,7 @@ def deleteSearchCallback():
         with dpg.window(label="Error", width=300, height=50, no_resize=True):
             dpg.add_text("Wasn't able to complete query.")
 
+# Callback for the 'Yes' button in the delete confirmation popup.
 def deleteCallback():
     dateVal = dpg.get_value("delete_date_value")
     status = dbms.delete(date(dateVal['year']+1900, dateVal['month']+1, dateVal['month_day']))
@@ -85,15 +99,20 @@ def deleteCallback():
             dpg.add_text("Deletion failed.")
     dpg.delete_item("confirm_delete")
 
+# Callback for the 'No' button in the delete confirmation popup.
 def deleteCancelCallback():
     dpg.delete_item("confirm_delete")
 
+# Callback for the 'Login' button on the login screen.
 def login():
+    # Attempting to create DB connection instance with credentials.
     if dbms.create(dpg.get_value("user_value"), dpg.get_value("pass_value")) != 0:
         with dpg.window(label="Error", width=300, height=50, no_resize=True):
             dpg.add_text("Error logging in, please try again.")
         return
+    # Deleting local storage password upon successful login.
     dpg.delete_item("pass_value")
+    # Constructing the main window GUI for application functions.
     with dpg.window(tag="MainWindow"):
         with dpg.tab_bar():
             with dpg.tab(label="Query"):
@@ -142,9 +161,11 @@ def login():
                     dpg.add_text("Date:")
                     dpg.add_date_picker(tag="delete_date_value")
                 dpg.add_button(label="Delete", callback=deleteSearchCallback)
+    # Replacing the login window with the new one.
     dpg.set_primary_window("MainWindow", True)
     dpg.delete_item("login_window")
 
+# Creating the login window GUI upon startup.
 with dpg.window(tag="login_window"):
     dpg.add_text("Please Login:")
     with dpg.group(horizontal=True):
@@ -156,10 +177,16 @@ with dpg.window(tag="login_window"):
     dpg.add_button(label="Connect", callback=login)
 dpg.set_primary_window("login_window", True)
 
+# Main render loop.
 dpg.show_viewport()
 while dpg.is_dearpygui_running():
+    # Update matplotlib plot on main thread if an update to the plot is needed.
+    if plotter.updatePlot():
+        wait = False
+    # Render GUI.
     dpg.render_dearpygui_frame()
 
+# Cleaning up GUI library and DB connection.
 dpg.destroy_context()
 dbms.destroy()
 
