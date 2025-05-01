@@ -37,7 +37,7 @@ def updatePlot():
     return True
 
 # Store data and wait for update signal from main thread.
-def make_map(lat, long, lats, longs, crimes):
+def scheduleUpdatePlot(lat, long, lats, longs, crimes):
     global updateLat, updateLong, updateLats, updateLongs, updateCrimes, shouldUpdate
     updateLat = lat
     updateLong = long

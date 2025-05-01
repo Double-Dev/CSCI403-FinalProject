@@ -30,7 +30,7 @@ def areaSearchCallback():
             lats.append(row[0])
             longs.append(row[1])
             crimes.append(row[2])
-        plotter.make_map(lat, long, lats, longs, crimes)
+        plotter.scheduleUpdatePlot(lat, long, lats, longs, crimes)
         wait = True
         while wait:
             time.sleep(0.1)
